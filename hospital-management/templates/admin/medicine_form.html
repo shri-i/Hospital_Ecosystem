@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if editing else 'Add' }} medicine{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ 'Edit medicine' if editing else 'Add medicine' }}</h1></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin.medicines') }}"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+<div class="card p-4" style="max-width: 640px">
+  <form method="post" novalidate>
+    <div class="row g-3">
+      <div class="col-md-7">
+        <label class="form-label">Name *</label>
+        <input class="form-control" name="name" required value="{{ med.get('name', '') }}" placeholder="e.g. Paracetamol 500mg">
+      </div>
+      <div class="col-md-5">
+        <label class="form-label">Manufacturer</label>
+        <input class="form-control" name="manufacturer" value="{{ med.get('manufacturer') or '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Unit price (₹) *</label>
+        <input class="form-control" name="unit_price" type="number" min="0" step="0.01" required value="{{ med.get('unit_price', '') }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Stock *</label>
+        <input class="form-control" name="stock" type="number" min="0" step="1" required value="{{ med.get('stock', '0') }}">
+      </div>
+    </div>
+    <button class="btn btn-primary mt-4"><i class="bi bi-check-lg"></i> Save</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Invoice #{{ bill.bill_id }}{% endblock %}
+{% block content %}
+<div class="page-header d-print-none">
+  <div><h1>Invoice #{{ bill.bill_id }}</h1></div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('billing.bill_list') }}"><i class="bi bi-arrow-left"></i> Back</a>
+    <button class="btn btn-outline-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="{{ 'col-lg-8' if bill.balance > 0 else 'col-12' }}">
+    <div class="card p-4 invoice">
+      <div class="invoice-head d-flex justify-content-between pb-3 mb-3">
+        <div>
+          <div class="fs-4 fw-bold text-brand"><i class="bi bi-heart-pulse-fill"></i> MediCare</div>
+          <div class="small text-muted">Vishrambag, Sangli, Maharashtra · 0233-2300000</div>
+        </div>
+        <div class="text-end">
+          <div class="fs-5 fw-semibold">INVOICE</div>
+          <div class="small">Bill #{{ bill.bill_id }}</div>
+          <div class="small text-muted">{{ bill.created_at.strftime('%d %b %Y') }}</div>
+          <span class="status status-{{ bill.status }} mt-1">{{ bill.status|upper }}</span>
+        </div>
+      </div>
+
+      <div class="row mb-4 small">
+        <div class="col-6">
+          <div class="text-muted">Billed to</div>
+          <div class="fw-semibold">{{ bill.patient_name }}</div>
+          <div>Patient #{{ bill.patient_id }} · {{ bill.patient_phone }}</div>
+        </div>
+        <div class="col-6 text-end">
+          <div class="text-muted">Consulting doctor</div>
+          <div class="fw-semibold">{{ bill.doctor_name }}</div>
+          <div>{{ bill.department_name }} · Visit {{ bill.visit_date.strftime('%d %b %Y') }}</div>
+          <div class="text-muted">Diagnosis: {{ bill.diagnosis }}</div>
+        </div>
+      </div>
+
+      <table class="table">
+        <thead><tr><th>#</th><th>Description</th><th class="text-end">Qty</th><th class="text-end">Rate</th><th class="text-end">Amount</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Consultation fee ({{ bill.doctor_name }})</td><td class="text-end">1</td><td class="text-end">{{ bill.consultation_fee|money }}</td><td class="text-end">{{ bill.consultation_fee|money }}</td></tr>
+          {% for it in items %}
+          <tr>
+            <td>{{ loop.index + 1 }}</td>
+            <td>{{ it.name }}<div class="small text-muted">{{ it.dosage }} · {{ it.duration }}</div></td>
+            <td class="text-end">{{ it.quantity }}</td>
+            <td class="text-end">{{ it.unit_price|money }}</td>
+            <td class="text-end">{{ it.line_total|money }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr><td colspan="4" class="text-end text-muted">Consultation</td><td class="text-end">{{ bill.consultation_fee|money }}</td></tr>
+          <tr><td colspan="4" class="text-end text-muted">Medicines <span class="small">(calculated by trigger)</span></td><td class="text-end">{{ bill.medicine_cost|money }}</td></tr>
+          <tr class="fs-5"><td colspan="4" class="text-end fw-bold">Total</td><td class="text-end fw-bold">{{ bill.total|money }}</td></tr>
+          <tr><td colspan="4" class="text-end text-success">Paid</td><td class="text-end text-success">{{ bill.amount_paid|money }}</td></tr>
+          <tr><td colspan="4" class="text-end fw-semibold {{ 'text-danger' if bill.balance > 0 }}">Balance due</td><td class="text-end fw-semibold {{ 'text-danger' if bill.balance > 0 }}">{{ bill.balance|money }}</td></tr>
+        </tfoot>
+      </table>
+
+      {% if payments %}
+      <h3 class="h6 mt-3">Payments received</h3>
+      <table class="table table-sm small">
+        <thead><tr><th>Payment</th><th>Date</th><th>Method</th><th class="text-end">Amount</th></tr></thead>
+        <tbody>
+        {% for p in payments %}
+          <tr><td>#{{ p.payment_id }}</td><td>{{ p.payment_date.strftime('%d %b %Y, %I:%M %p') }}</td><td>{{ p.method }}</td><td class="text-end">{{ p.amount|money }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      <p class="small text-muted text-center mt-3 mb-0">Thank you for choosing MediCare. Get well soon!</p>
+    </div>
+  </div>
+
+  {% if bill.balance > 0 %}
+  <div class="col-lg-4 d-print-none">
+    <div class="card p-4">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-cash-coin"></i> Record payment</h2>
+      <form method="post" action="{{ url_for('billing.pay', bill_id=bill.bill_id) }}">
+        <div class="mb-3">
+          <label class="form-label">Amount (₹)</label>
+          <input class="form-control form-control-lg" name="amount" type="number" step="0.01" min="0.01" max="{{ bill.balance }}" value="{{ bill.balance }}" required>
+          <div class="form-text">Balance due: {{ bill.balance|money }}. Partial payments are allowed.</div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Method</label>
+          <div class="d-flex flex-wrap gap-2">
+            {% for m in methods %}
+            <input type="radio" class="btn-check" name="method" id="m{{ m }}" value="{{ m }}" {{ 'checked' if loop.first }}>
+            <label class="btn btn-outline-primary btn-sm" for="m{{ m }}">{{ m }}</label>
+            {% endfor %}
+          </div>
+        </div>
+        <button class="btn btn-primary w-100"><i class="bi bi-check2-circle"></i> Record payment</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

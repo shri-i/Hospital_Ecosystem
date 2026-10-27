@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}My Patients{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>My Patients</h1><div class="sub">From the <code>doctor_patients</code> view: patients you have seen or registered</div></div>
+  <div class="d-flex gap-2">
+    <form class="d-flex" method="get">
+      <input class="form-control" name="q" value="{{ q }}" placeholder="Search name or phone…" style="min-width: 220px">
+    </form>
+    <a class="btn btn-primary text-nowrap" href="{{ url_for('patients.patient_add', **{'from': 'my'}) }}"><i class="bi bi-person-plus"></i> Add new patient</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  {% for p in patients %}
+  <div class="col-md-6 col-xl-4">
+    <div class="card h-100 p-3">
+      <div class="d-flex gap-3 align-items-center mb-2">
+        <div class="avatar" style="width:44px;height:44px;font-size:1.1rem">{{ p.name[:1] }}</div>
+        <div class="flex-grow-1">
+          <a class="fw-semibold" href="{{ url_for('patients.profile', patient_id=p.patient_id) }}">{{ p.name }}</a>
+          <div class="small text-muted">{{ p.dob|age }} y · {{ p.gender }}{% if p.blood_group %} · {{ p.blood_group }}{% endif %}</div>
+        </div>
+      </div>
+      <div class="small"><i class="bi bi-telephone text-muted"></i> {{ p.phone }}</div>
+      <div class="small"><i class="bi bi-clock-history text-muted"></i> Last visit: {{ p.last_visit.strftime('%d %b %Y') if p.last_visit else '—' }}</div>
+      <div class="small"><i class="bi bi-calendar-event text-muted"></i> Next appointment: {{ p.next_appointment.strftime('%d %b %Y') if p.next_appointment else '—' }}</div>
+      <div class="mt-3 d-flex gap-2">
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('patients.profile', patient_id=p.patient_id) }}">Profile</a>
+        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('appointments.book', patient_id=p.patient_id) }}"><i class="bi bi-calendar-plus"></i> Book</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12"><div class="card p-5 text-center text-muted">No patients yet. Add one, or they will appear after their first appointment with you.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}

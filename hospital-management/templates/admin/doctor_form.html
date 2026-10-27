@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if editing else 'Add' }} doctor{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ 'Edit doctor' if editing else 'Add doctor' }}</h1>
+    <div class="sub">{{ 'Update details or reset the password.' if editing else 'Creates the doctor and their login in one transaction.' }}</div></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin.doctors') }}"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<form method="post" novalidate>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card p-4 h-100">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-person-badge"></i> Doctor details</h2>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Full name *</label>
+          <input class="form-control" name="name" required placeholder="Dr. Firstname Lastname" value="{{ doctor.get('name', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Specialization *</label>
+          <input class="form-control" name="specialization" required value="{{ doctor.get('specialization', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Department *</label>
+          <select class="form-select" name="department_id" required>
+            <option value="">Choose…</option>
+            {% for dep in departments %}
+              <option value="{{ dep.department_id }}" {{ 'selected' if doctor.get('department_id')|string == dep.department_id|string }}>{{ dep.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Consultation fee (₹) *</label>
+          <input class="form-control" name="consultation_fee" type="number" min="0" step="0.01" required value="{{ doctor.get('consultation_fee', '500') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Phone *</label>
+          <input class="form-control" name="phone" required pattern="\d{10}" maxlength="10" placeholder="10 digits" value="{{ doctor.get('phone', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          <input class="form-control" name="email" type="email" value="{{ doctor.get('email') or '' }}">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card p-4 h-100">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-key"></i> Login account</h2>
+      <div class="mb-3">
+        <label class="form-label">Username {{ '' if editing else '*' }}</label>
+        <input class="form-control" name="username" {{ 'disabled' if editing }} value="{{ doctor.get('username') or '' }}" placeholder="e.g. dr.sharma">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">{{ 'New password (leave blank to keep)' if editing else 'Password *' }}</label>
+        <input class="form-control" name="password" type="password" minlength="6">
+      </div>
+      <p class="small text-muted mb-0">The password is stored as a secure hash, never as plain text.</p>
+    </div>
+  </div>
+</div>
+<button class="btn btn-primary mt-3"><i class="bi bi-check-lg"></i> Save doctor</button>
+</form>
+{% endblock %}

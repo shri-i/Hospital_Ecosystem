@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block title %}Consultation{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Consultation</h1>
+    <div class="sub">Appointment #{{ appt.appointment_id }} · {{ appt.appointment_date.strftime('%d %b %Y') }}, {{ appt.appointment_time|time12 }}</div>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('appointments.appointment_list') }}"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<div class="row g-3">
+  <!-- patient summary -->
+  <div class="col-lg-4">
+    <div class="card p-4 mb-3">
+      <div class="d-flex align-items-center gap-3 mb-3">
+        <div class="avatar">{{ appt.patient_name[:1] }}</div>
+        <div>
+          <a class="fw-semibold fs-5" href="{{ url_for('patients.profile', patient_id=appt.patient_id) }}">{{ appt.patient_name }}</a>
+          <div class="small text-muted">{{ appt.dob|age }} y · {{ appt.gender }} {% if appt.blood_group %}· {{ appt.blood_group }}{% endif %}</div>
+        </div>
+      </div>
+      <dl class="detail-list mb-0">
+        <dt>Reason</dt><dd>{{ appt.reason or '—' }}</dd>
+        <dt>Allergies</dt><dd>{% if appt.allergies %}<span class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle"></i> {{ appt.allergies }}</span>{% else %}None known{% endif %}</dd>
+        <dt>Existing conditions</dt><dd>{{ appt.existing_conditions or 'None' }}</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock-history"></i> Previous visits</div>
+      <ul class="list-group list-group-flush">
+        {% for h in history %}
+          <li class="list-group-item small"><div class="fw-semibold">{{ h.diagnosis }}</div><div class="text-muted">{{ h.visit_date.strftime('%d %b %Y') }} · {{ h.doctor_name }}</div></li>
+        {% else %}
+          <li class="list-group-item small text-muted">First visit.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- consultation form -->
+  <div class="col-lg-8">
+    <form method="post" id="consultForm" novalidate>
+      <div class="card p-4 mb-3">
+        <h2 class="h6 text-brand mb-3"><i class="bi bi-clipboard2-pulse"></i> Diagnosis &amp; notes</h2>
+        <div class="mb-3">
+          <label class="form-label">Diagnosis *</label>
+          <input class="form-control" name="diagnosis" required value="{{ form.get('diagnosis', '') }}" placeholder="e.g. Viral fever">
+        </div>
+        <div>
+          <label class="form-label">Notes / advice</label>
+          <textarea class="form-control" name="notes" rows="3" placeholder="Findings, tests advised, follow-up…">{{ form.get('notes', '') }}</textarea>
+        </div>
+      </div>
+
+      <div class="card p-4 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h6 text-brand mb-0"><i class="bi bi-capsule"></i> Prescription</h2>
+          <button type="button" class="btn btn-sm btn-outline-primary" id="addMed"><i class="bi bi-plus-lg"></i> Add medicine</button>
+        </div>
+        <div class="row g-2 small text-muted fw-semibold px-2 d-none d-md-flex">
+          <div class="col-md-4">Medicine</div><div class="col-md-2">Dosage</div><div class="col-md-3">Duration</div><div class="col-md-2">Qty</div>
+        </div>
+        <div id="medRows"></div>
+        <div class="d-flex justify-content-between border-top pt-3 mt-2">
+          <span class="text-muted">Consultation fee {{ appt.consultation_fee|money }} + medicines</span>
+          <span class="fw-semibold">Estimated bill: <span id="estTotal">{{ appt.consultation_fee|money }}</span></span>
+        </div>
+      </div>
+
+      <div class="alert alert-light border small">
+        <i class="bi bi-database-check"></i> Saving runs <b>one transaction</b>: visit → bill → prescription → items (trigger updates the bill) → stock → appointment status.
+      </div>
+      <button class="btn btn-primary btn-lg"><i class="bi bi-check2-circle"></i> Complete consultation</button>
+    </form>
+  </div>
+</div>
+
+<!-- template for one medicine row (cloned by JS) -->
+<template id="medRowTpl">
+  <div class="row g-2 align-items-center med-row">
+    <div class="col-md-4">
+      <select class="form-select form-select-sm med-select" name="medicine_id">
+        <option value="">Choose…</option>
+        {% for m in medicines %}
+          <option value="{{ m.medicine_id }}" data-price="{{ m.unit_price }}" {{ 'disabled' if m.stock == 0 }}>{{ m.name }} (₹{{ m.unit_price }}, stock {{ m.stock }})</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><input class="form-control form-control-sm" name="dosage" placeholder="1-0-1"></div>
+    <div class="col-md-3"><input class="form-control form-control-sm" name="duration" placeholder="5 days"></div>
+    <div class="col-md-2"><input class="form-control form-control-sm med-qty" name="quantity" type="number" min="1" value="1"></div>
+    <div class="col-md-1 text-end"><button type="button" class="btn btn-sm btn-outline-danger remove-med" title="Remove"><i class="bi bi-x-lg"></i></button></div>
+  </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add / remove medicine rows and keep a live bill estimate.
+(function () {
+  const fee = {{ appt.consultation_fee|float }};
+  const rows = document.getElementById('medRows');
+  const tpl = document.getElementById('medRowTpl');
+
+  function addRow() {
+    rows.appendChild(tpl.content.cloneNode(true));
+    updateTotal();
+  }
+
+  function updateTotal() {
+    let total = fee;
+    rows.querySelectorAll('.med-row').forEach(function (r) {
+      const opt = r.querySelector('.med-select').selectedOptions[0];
+      const price = opt && opt.dataset.price ? parseFloat(opt.dataset.price) : 0;
+      const qty = parseInt(r.querySelector('.med-qty').value) || 0;
+      total += price * qty;
+    });
+    document.getElementById('estTotal').textContent =
+      '₹' + total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+
+  document.getElementById('addMed').addEventListener('click', addRow);
+  rows.addEventListener('click', function (e) {
+    const btn = e.target.closest('.remove-med');
+    if (btn) { btn.closest('.med-row').remove(); updateTotal(); }
+  });
+  rows.addEventListener('input', updateTotal);
+  rows.addEventListener('change', updateTotal);
+  addRow();   // start with one empty row
+})();
+</script>
+{% endblock %}

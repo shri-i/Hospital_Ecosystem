@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if editing else 'Register' }} patient{% endblock %}
+{% block content %}
+{% set back = url_for('patients.profile', patient_id=patient.patient_id) if editing
+              else (url_for('patients.my_patients') if came_from_my else url_for('patients.patient_list')) %}
+<div class="page-header">
+  <div>
+    <h1>{{ 'Edit patient' if editing else 'Register new patient' }}</h1>
+    {% if not editing and session.role == 'doctor' %}
+      <div class="sub"><i class="bi bi-link-45deg"></i> This patient will be linked to you and appear on <b>My Patients</b>.</div>
+    {% endif %}
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ back }}"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<form method="post" novalidate>
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card p-4 h-100">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-person"></i> Personal details</h2>
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label">Full name *</label>
+          <input class="form-control" name="name" required value="{{ patient.get('name', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Phone *</label>
+          <input class="form-control" name="phone" required maxlength="10" inputmode="numeric" placeholder="10 digits" value="{{ patient.get('phone', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Date of birth *</label>
+          <input class="form-control" name="dob" type="date" required value="{{ patient.get('dob', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Gender *</label>
+          <div class="d-flex gap-3 pt-1">
+            {% for g in genders %}
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="gender" id="g{{ g }}" value="{{ g }}" {{ 'checked' if patient.get('gender') == g }}>
+              <label class="form-check-label" for="g{{ g }}">{{ g }}</label>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Blood group</label>
+          <select class="form-select" name="blood_group">
+            <option value="">Unknown</option>
+            {% for b in blood_groups %}<option {{ 'selected' if patient.get('blood_group') == b }}>{{ b }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Address</label>
+          <input class="form-control" name="address" value="{{ patient.get('address') or '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Emergency contact</label>
+          <input class="form-control" name="emergency_contact" maxlength="10" inputmode="numeric" placeholder="10 digits" value="{{ patient.get('emergency_contact') or '' }}">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card p-4 h-100">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-heart-pulse"></i> Medical information</h2>
+      <div class="mb-3">
+        <label class="form-label">Known allergies</label>
+        <textarea class="form-control" name="allergies" rows="3" placeholder="e.g. Penicillin, peanuts">{{ patient.get('allergies') or '' }}</textarea>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Existing conditions</label>
+        <textarea class="form-control" name="existing_conditions" rows="3" placeholder="e.g. Diabetes, hypertension">{{ patient.get('existing_conditions') or '' }}</textarea>
+      </div>
+    </div>
+  </div>
+</div>
+<button class="btn btn-primary mt-3"><i class="bi bi-check-lg"></i> {{ 'Save changes' if editing else 'Register patient' }}</button>
+</form>
+{% endblock %}

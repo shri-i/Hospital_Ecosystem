@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Database error{% endblock %}
+{% block content %}
+<div class="container py-5" style="max-width: 720px">
+  <div class="card p-4">
+    <h1 class="h4 text-danger"><i class="bi bi-database-exclamation"></i> Database error</h1>
+    <p class="mb-2">The app could not complete this request.</p>
+    <pre class="sql">{{ error }}</pre>
+    <ul class="small text-muted mt-3 mb-0">
+      <li>Is MySQL running?</li>
+      <li>Is the password in <code>config.py</code> correct?</li>
+      <li>Did you run <code>schema.sql</code>, <code>triggers_views.sql</code> and <code>seed.sql</code>?</li>
+    </ul>
+    <a class="btn btn-outline-primary mt-3" href="{{ url_for('dashboard') }}">Back to dashboard</a>
+  </div>
+</div>
+{% endblock %}

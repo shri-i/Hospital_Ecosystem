@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Book appointment{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Book appointment</h1><div class="sub">Saved through the <code>book_appointment</code> stored procedure (transaction + double-booking check)</div></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('appointments.appointment_list') }}"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<form method="post" novalidate>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card p-4">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label">1. Patient *</label>
+          <select class="form-select" name="patient_id" required>
+            <option value="">Choose patient…</option>
+            {% for p in patients %}
+              <option value="{{ p.patient_id }}" {{ 'selected' if form.get('patient_id') == p.patient_id|string }}>{{ p.name }} · {{ p.phone }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text">Not in the list? <a href="{{ url_for('patients.patient_add') }}">Register a new patient</a>.</div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">2. Department *</label>
+          <select class="form-select" id="department" name="department_id" {{ 'disabled' if session.role == 'doctor' }}>
+            <option value="">Choose department…</option>
+            {% for d in departments %}
+              <option value="{{ d.department_id }}" {{ 'selected' if form.get('department_id') == d.department_id|string }}>{{ d.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">3. Doctor *</label>
+          {% if session.role == 'doctor' %}
+            <input type="hidden" name="doctor_id" id="doctor" value="{{ form.doctor_id }}">
+            <input class="form-control" value="{{ session.display_name }} (you)" disabled>
+          {% else %}
+          <select class="form-select" id="doctor" name="doctor_id" required>
+            <option value="">Choose department first…</option>
+            {% for d in doctors %}
+              <option value="{{ d.doctor_id }}" data-dept="{{ d.department_id }}" data-fee="{{ d.consultation_fee }}"
+                      {{ 'selected' if form.get('doctor_id') == d.doctor_id|string }}>{{ d.name }} · {{ d.specialization }}</option>
+            {% endfor %}
+          </select>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">4. Date *</label>
+          <input class="form-control" type="date" id="date" name="appointment_date" min="{{ today }}" required value="{{ form.get('appointment_date', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">5. Time slot *</label>
+          <select class="form-select" id="time" name="appointment_time" required>
+            <option value="">Choose time…</option>
+            {% for s in slots %}
+              <option value="{{ s }}" {{ 'selected' if form.get('appointment_time') == s }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text" id="slotHint">Booked slots are greyed out.</div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">Reason for visit</label>
+          <input class="form-control" name="reason" maxlength="255" value="{{ form.get('reason', '') }}" placeholder="e.g. Chest pain, follow-up…">
+        </div>
+      </div>
+      <button class="btn btn-primary mt-4"><i class="bi bi-calendar-check"></i> Book appointment</button>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card p-4">
+      <h2 class="h6 text-brand"><i class="bi bi-info-circle"></i> How booking works</h2>
+      <ol class="small mb-0 ps-3">
+        <li>Flask calls <code>CALL book_appointment(...)</code>.</li>
+        <li>The procedure starts a <b>transaction</b>, checks the patient, doctor and date.</li>
+        <li>If the doctor already has that slot it raises an error and <b>rolls back</b>.</li>
+        <li>The <code>UNIQUE(doctor_id, date, time)</code> constraint is a second safety net.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filter the doctor list by department, and grey out slots that are already booked.
+(function () {
+  const dept = document.getElementById('department');
+  const doctor = document.getElementById('doctor');
+  const date = document.getElementById('date');
+  const time = document.getElementById('time');
+
+  function filterDoctors() {
+    if (doctor.tagName !== 'SELECT') return;
+    const d = dept.value;
+    let selectedStillVisible = false;
+    Array.from(doctor.options).forEach(function (opt, i) {
+      if (i === 0) { opt.textContent = d ? 'Choose doctor…' : 'Choose department first…'; return; }
+      const show = d && opt.dataset.dept === d;
+      opt.hidden = !show;
+      if (show && opt.selected) selectedStillVisible = true;
+    });
+    if (!selectedStillVisible) doctor.value = '';
+  }
+
+  async function markBookedSlots() {
+    Array.from(time.options).forEach(o => { o.disabled = false; o.textContent = o.value || 'Choose time…'; });
+    if (!doctor.value || !date.value) return;
+    const res = await fetch(`{{ url_for('appointments.booked_slots') }}?doctor_id=${doctor.value}&date=${date.value}`);
+    const booked = await res.json();
+    Array.from(time.options).forEach(o => {
+      if (booked.includes(o.value)) { o.disabled = true; o.textContent = o.value + ' (booked)'; if (o.selected) time.value = ''; }
+    });
+    document.getElementById('slotHint').textContent =
+      booked.length ? `${booked.length} slot(s) already booked for this doctor on this day.` : 'All slots free for this day.';
+  }
+
+  dept.addEventListener('change', function () { filterDoctors(); markBookedSlots(); });
+  doctor.addEventListener('change', markBookedSlots);
+  date.addEventListener('change', markBookedSlots);
+  filterDoctors();
+  markBookedSlots();
+})();
+</script>
+{% endblock %}

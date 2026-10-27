@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}{{ patient.name }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="d-flex align-items-center gap-3">
+    <div class="avatar">{{ patient.name[:1] }}</div>
+    <div>
+      <h1>{{ patient.name }}</h1>
+      <div class="sub">Patient #{{ patient.patient_id }} · {{ patient.dob|age }} years · {{ patient.gender }}
+        {% if patient.blood_group %} · <span class="badge badge-blood">{{ patient.blood_group }}</span>{% endif %}</div>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    {% if can_edit %}<a class="btn btn-outline-primary" href="{{ url_for('patients.patient_edit', patient_id=patient.patient_id) }}"><i class="bi bi-pencil"></i> Edit</a>{% endif %}
+    {% if session.role in ('receptionist', 'doctor') %}
+      <a class="btn btn-primary" href="{{ url_for('appointments.book', patient_id=patient.patient_id) }}"><i class="bi bi-calendar-plus"></i> Book appointment</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- left: details -->
+  <div class="col-lg-4">
+    <div class="card p-4 mb-3">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-person-lines-fill"></i> Details</h2>
+      <dl class="detail-list mb-0">
+        <dt>Phone</dt><dd>{{ patient.phone }}</dd>
+        <dt>Date of birth</dt><dd>{{ patient.dob.strftime('%d %b %Y') }}</dd>
+        <dt>Address</dt><dd>{{ patient.address or '—' }}</dd>
+        <dt>Emergency contact</dt><dd>{{ patient.emergency_contact or '—' }}</dd>
+        <dt>Registered by</dt><dd>{{ patient.registered_by or 'Front desk' }} · {{ patient.created_at.strftime('%d %b %Y') }}</dd>
+      </dl>
+    </div>
+    <div class="card p-4 mb-3">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-exclamation-triangle"></i> Medical alerts</h2>
+      <dl class="detail-list mb-0">
+        <dt>Allergies</dt><dd>{% if patient.allergies %}<span class="text-danger fw-semibold">{{ patient.allergies }}</span>{% else %}None known{% endif %}</dd>
+        <dt>Existing conditions</dt><dd>{{ patient.existing_conditions or 'None' }}</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <div class="card-header"><i class="bi bi-calendar3"></i> Appointments ({{ appointments|length }})</div>
+      <ul class="list-group list-group-flush">
+        {% for a in appointments %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <div class="fw-semibold small">{{ a.appointment_date.strftime('%d %b %Y') }}, {{ a.appointment_time|time12 }}</div>
+            <div class="small text-muted">{{ a.doctor_name }} · {{ a.department_name }}</div>
+          </div>
+          <span class="status status-{{ a.status }}">{{ a.status }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted small">No appointments yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- right: visit history -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-clock-history"></i> Visit history ({{ visits|length }})</div>
+      <div class="card-body">
+        {% if visits %}
+        <div class="timeline">
+          {% for v in visits %}
+          <div class="timeline-item">
+            <div class="d-flex flex-wrap justify-content-between gap-2">
+              <div>
+                <div class="fw-semibold">{{ v.diagnosis }}</div>
+                <div class="small text-muted">{{ v.visit_date.strftime('%d %b %Y') }} · {{ v.doctor_name }} ({{ v.department_name }})</div>
+              </div>
+              {% if v.bill_id %}
+                <div class="text-end">
+                  {% if session.role in ('receptionist', 'admin') %}
+                    <a class="small" href="{{ url_for('billing.detail', bill_id=v.bill_id) }}">Bill #{{ v.bill_id }}</a>
+                  {% else %}<span class="small text-muted">Bill #{{ v.bill_id }}</span>{% endif %}
+                  <div><span class="status status-{{ v.bill_status }}">{{ v.total|money }} · {{ v.bill_status }}</span></div>
+                </div>
+              {% endif %}
+            </div>
+            {% if v.notes %}<p class="small mt-2 mb-2">{{ v.notes }}</p>{% endif %}
+            {% set meds = meds_by_visit.get(v.visit_id, []) %}
+            {% if meds %}
+              <table class="table table-sm small mt-2 mb-0 bg-white">
+                <thead><tr><th>Medicine</th><th>Dosage</th><th>Duration</th><th class="text-end">Qty</th></tr></thead>
+                <tbody>
+                {% for m in meds %}
+                  <tr><td><i class="bi bi-capsule text-brand"></i> {{ m.medicine }}</td><td>{{ m.dosage }}</td><td>{{ m.duration }}</td><td class="text-end">{{ m.quantity }}</td></tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+          <p class="text-muted mb-0">No visits recorded yet. Visits appear here after a doctor completes a consultation.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Doctors{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Doctors</h1><div class="sub">{{ doctors|length }} doctors</div></div>
+  <a class="btn btn-primary" href="{{ url_for('admin.doctor_form') }}"><i class="bi bi-plus-lg"></i> Add doctor</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Phone / Email</th><th class="text-end">Fee</th><th>Login</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for d in doctors %}
+        <tr>
+          <td class="text-muted">{{ d.doctor_id }}</td>
+          <td><div class="fw-semibold">{{ d.name }}</div><div class="small text-muted">{{ d.specialization }}</div></td>
+          <td>{{ d.department_name }}</td>
+          <td>{{ d.phone }}<div class="small text-muted">{{ d.email or '' }}</div></td>
+          <td class="text-end">{{ d.consultation_fee|money }}</td>
+          <td>{% if d.username %}<code>{{ d.username }}</code>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.doctor_form', doctor_id=d.doctor_id) }}"><i class="bi bi-pencil"></i> Edit</a>
+            <form class="d-inline" method="post" action="{{ url_for('admin.doctor_delete', doctor_id=d.doctor_id) }}" data-confirm="Delete {{ d.name }} and their login?">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-4">No doctors yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

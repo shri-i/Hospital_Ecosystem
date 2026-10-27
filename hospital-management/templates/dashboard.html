@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+
+{# small "</> SQL" button that reveals the query behind a widget #}
+{% macro sql_box(id, sql, light=false) %}
+  <button class="btn btn-link btn-sm p-0 sql-toggle text-decoration-none" type="button"
+          data-bs-toggle="collapse" data-bs-target="#{{ id }}"><i class="bi bi-code-slash"></i> SQL</button>
+  <div class="collapse" id="{{ id }}"><pre class="sql">{{ sql }}</pre></div>
+{% endmacro %}
+
+{# round white arrow button, like the reference design #}
+{% macro arrow(url) %}
+  {% if url %}<a class="dash-arrow" href="{{ url }}" aria-label="Open"><i class="bi bi-arrow-up-right"></i></a>{% endif %}
+{% endmacro %}
+
+{% block content %}
+{% set role = session.role %}
+{% if role == 'admin' %}{% set today_count = cards[1].value %}
+{% elif role == 'doctor' %}{% set today_count = today_total %}
+{% else %}{% set today_count = today|length %}{% endif %}
+
+<div class="dash">
+  <!-- ===== header ===== -->
+  <div class="dash-header">
+    <div>
+      <h1 class="dash-hello">Welcome back <span class="wave">👋</span></h1>
+      <div class="dash-sub">{{ session.display_name }} · {{ subtitle }}</div>
+    </div>
+    <div class="d-flex align-items-center gap-3">
+      <form class="dash-search" method="get" action="{{ search_url }}">
+        <i class="bi bi-search"></i>
+        <input name="q" placeholder="Search patients by name or phone">
+      </form>
+      <div class="dash-avatar" title="{{ session.display_name }}">{{ session.display_name|initials }}</div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- ================= LEFT ================= -->
+    <div class="col-xl-8">
+      <h2 class="dash-h2">{{ tiles_title }} <span class="dash-count">({{ today_count }} today)</span></h2>
+
+      <!-- big tiles with avatar stacks -->
+      <div class="row g-3 mb-4">
+        {% for t in tiles %}
+        <div class="col-md-6">
+          <div class="dash-tile tile-{{ t.color }}">
+            <span class="dash-chip"><i class="bi bi-star-fill"></i> {{ t.chip }}</span>
+            <div class="avatar-stack">
+              {% for n in t.people %}<span class="av av-{{ loop.index }}" title="{{ n }}">{{ n|initials }}</span>{% endfor %}
+              {% if t.count > t.people|length %}<span class="av av-more">+{{ t.count - t.people|length }}</span>{% endif %}
+            </div>
+            <div class="d-flex justify-content-between align-items-end">
+              <div class="dash-tile-title">{{ t.title }}</div>
+              {{ arrow(t.url) }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <h2 class="dash-h2">At a glance</h2>
+      <!-- number tiles -->
+      <div class="row g-3 mb-3">
+        {% for c in cards %}
+        <div class="col-md-4">
+          <div class="dash-stat tile-{{ ['ice', 'gold', 'plum'][loop.index0] }}">
+            <div class="dash-stat-label">{{ c.label }}</div>
+            <div class="d-flex justify-content-between align-items-end">
+              <div class="dash-stat-value {{ 'is-money' if c.money }}">{{ c.value|money if c.money else c.value }}</div>
+              {{ arrow(c.url) }}
+            </div>
+            <div class="mt-2">{{ sql_box('sql' ~ loop.index, c.sql) }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {# ---------- wide cards ---------- #}
+      {% if role == 'doctor' %}
+        <div class="dash-wide tile-gold">
+          {% if next_appt %}
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="dash-wide-kicker"><span class="kicker-icon"><i class="bi bi-clipboard2-pulse"></i></span> Next up · {{ 'Today' if next_appt.appointment_date == today_date else next_appt.appointment_date.strftime('%d %b') }}, {{ next_appt.appointment_time|time12 }}</div>
+              {% if next_appt.appointment_date == today_date %}{{ arrow(url_for('visits.consultation', appointment_id=next_appt.appointment_id)) }}{% endif %}
+            </div>
+            <div class="dash-wide-meta"><i class="bi bi-person"></i> {{ next_appt.reason or 'Consultation' }}{% if next_appt.allergies %} · <span class="text-danger">Allergy: {{ next_appt.allergies }}</span>{% endif %}</div>
+            <div class="dash-wide-title">{{ next_appt.patient_name }}</div>
+          {% else %}
+            <div class="dash-wide-kicker"><span class="kicker-icon"><i class="bi bi-cup-hot"></i></span> Next up</div>
+            <div class="dash-wide-title">No upcoming appointments</div>
+          {% endif %}
+          <div class="d-flex justify-content-between small mt-2 mb-1"><span>Consultations today</span><span>{{ today_done }}/{{ today_total }}</span></div>
+          <div class="dash-progress"><span style="width: {{ (today_done / today_total * 100) if today_total else 0 }}%"></span></div>
+          <div class="mt-2">{{ sql_box('sqlNext', next_sql) }}</div>
+        </div>
+      {% else %}
+        {% set pct = (money.collected / money.billed * 100) if money.billed else 0 %}
+        <div class="dash-wide tile-gold">
+          <div class="d-flex justify-content-between align-items-start">
+            <div class="dash-wide-kicker"><span class="kicker-icon"><i class="bi bi-cash-coin"></i></span> Billing</div>
+            {{ arrow(url_for('billing.bill_list')) }}
+          </div>
+          <div class="dash-wide-meta"><i class="bi bi-receipt"></i> {{ money.collected|money }} of {{ money.billed|money }} collected</div>
+          <div class="dash-wide-title">Collections {{ pct|round|int }}%</div>
+          <div class="dash-progress mt-2"><span style="width: {{ pct }}%"></span></div>
+          <div class="mt-2">{{ sql_box('sqlMoney', money_sql) }}</div>
+        </div>
+      {% endif %}
+
+      {% if role == 'admin' %}
+        <div class="dash-wide tile-plum">
+          <div class="dash-wide-kicker mb-3"><span class="kicker-icon"><i class="bi bi-diagram-3"></i></span> Departments <span class="small fw-normal opacity-75">(JOIN + GROUP BY)</span></div>
+          <div class="row g-3">
+            {% for d in dept_stats %}
+            <div class="col-sm-6">
+              <div class="d-flex justify-content-between small mb-1"><span class="fw-semibold">{{ d.name }}</span><span>{{ d.completed or 0 }}/{{ d.appointments }} completed</span></div>
+              <div class="dash-progress"><span style="width: {{ ((d.completed or 0) / d.appointments * 100) if d.appointments else 0 }}%"></span></div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="mt-3">{{ sql_box('sqlDept', dept_sql) }}</div>
+        </div>
+      {% elif role == 'receptionist' %}
+        <div class="dash-wide tile-plum">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="dash-wide-kicker"><span class="kicker-icon"><i class="bi bi-hourglass-split"></i></span> Waiting for payment</div>
+            {{ arrow(url_for('billing.bill_list', status='Pending')) }}
+          </div>
+          {% for b in pending_bills %}
+            <a class="dash-row" href="{{ url_for('billing.detail', bill_id=b.bill_id) }}">
+              <span><b>#{{ b.bill_id }}</b> · {{ b.patient_name }} <span class="opacity-75">· {{ b.doctor_name }}</span></span>
+              <span class="fw-semibold">{{ b.balance|money }}</span>
+            </a>
+          {% else %}
+            <div class="small">All bills are paid. 🎉</div>
+          {% endfor %}
+          <div class="mt-2">{{ sql_box('sqlPending', pending_sql) }}</div>
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- ================= RIGHT ================= -->
+    <div class="col-xl-4">
+      <h2 class="dash-h2">Schedule</h2>
+
+      <!-- month calendar: days with appointments are highlighted -->
+      <div class="dash-cal mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="dash-cal-title">{{ cal.title }}</div>
+          <div class="d-flex gap-1">
+            <a class="cal-nav" href="{{ url_for('dashboard', month=cal.prev) }}" aria-label="Previous month"><i class="bi bi-chevron-left"></i></a>
+            <a class="cal-nav" href="{{ url_for('dashboard', month=cal.next) }}" aria-label="Next month"><i class="bi bi-chevron-right"></i></a>
+          </div>
+        </div>
+        <div class="cal-grid cal-head">
+          {% for d in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}<span>{{ d }}</span>{% endfor %}
+        </div>
+        {% for week in cal.weeks %}
+        <div class="cal-grid">
+          {% for day in week %}
+            {% set cls = 'cal-day' ~ (' out' if not day.in_month) ~ (' has' if day.count) ~ (' today' if day.today) %}
+            {% if day.in_month and role != 'admin' %}
+              <a class="{{ cls }}" href="{{ url_for('appointments.appointment_list', date=day.date.isoformat()) }}"
+                 title="{{ day.count }} appointment{{ '' if day.count == 1 else 's' }}">{{ day.date.day }}</a>
+            {% else %}
+              <span class="{{ cls }}" {% if day.count %}title="{{ day.count }} appointments"{% endif %}>{{ day.date.day }}</span>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endfor %}
+        <div class="cal-legend">
+          <span><i class="dot dot-has"></i> has appointments</span>
+          <span><i class="dot dot-today"></i> today</span>
+          <span class="ms-auto">{{ cal.total }} this month</span>
+        </div>
+      </div>
+
+      <!-- schedule list -->
+      <div class="small fw-semibold text-muted text-uppercase mb-2" style="letter-spacing:.05em">{{ side_title }}</div>
+      {% if role == 'admin' %}
+        {% for b in bills %}
+          <a class="dash-item" href="{{ url_for('billing.detail', bill_id=b.bill_id) }}">
+            <span class="dash-item-icon"><i class="bi bi-receipt"></i></span>
+            <span class="flex-grow-1"><span class="d-block fw-semibold">Bill #{{ b.bill_id }} · {{ b.patient_name }}</span>
+              <span class="small opacity-75">{{ b.doctor_name }} · {{ b.total|money }}</span></span>
+            <span class="status status-{{ b.status }}">{{ b.status }}</span>
+          </a>
+        {% endfor %}
+      {% else %}
+        {% for a in today %}
+          <a class="dash-item" href="{{ url_for('visits.consultation', appointment_id=a.appointment_id) if role == 'doctor' and a.status == 'Scheduled' else url_for('patients.profile', patient_id=a.patient_id) }}">
+            <span class="dash-item-icon"><i class="bi bi-{{ 'check2' if a.status == 'Completed' else ('x-lg' if a.status == 'Cancelled' else 'clock') }}"></i></span>
+            <span class="flex-grow-1"><span class="d-block fw-semibold">{{ a.appointment_time|time12 }} · {{ a.patient_name }}</span>
+              <span class="small opacity-75">{{ a.doctor_name ~ ' · ' if a.doctor_name }}{{ a.reason or 'Consultation' }}</span></span>
+            <span class="status status-{{ a.status }}">{{ a.status }}</span>
+          </a>
+        {% else %}
+          <div class="dash-item"><span class="dash-item-icon"><i class="bi bi-cup-hot"></i></span><span>No appointments today.</span></div>
+        {% endfor %}
+      {% endif %}
+      <div class="mt-1">{{ sql_box('sqlSide', side_sql) }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

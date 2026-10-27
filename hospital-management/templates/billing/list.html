@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Billing{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Billing</h1><div class="sub">Bills are created automatically when a consultation is completed</div></div>
+  <form class="d-flex gap-2" method="get">
+    <input class="form-control" name="q" value="{{ q }}" placeholder="Patient name or phone…">
+    <input type="hidden" name="status" value="{{ status }}">
+    <button class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
+  </form>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4"><div class="card p-3"><div class="small text-muted">Total billed</div><div class="fs-4 fw-bold">{{ totals.billed|money }}</div></div></div>
+  <div class="col-md-4"><div class="card p-3"><div class="small text-muted">Collected</div><div class="fs-4 fw-bold text-success">{{ totals.collected|money }}</div></div></div>
+  <div class="col-md-4"><div class="card p-3"><div class="small text-muted">Outstanding</div><div class="fs-4 fw-bold text-danger">{{ totals.outstanding|money }}</div></div></div>
+</div>
+
+<ul class="nav nav-pills mb-3">
+  {% for s, label in [('', 'All'), ('Pending', 'Pending'), ('Paid', 'Paid')] %}
+  <li class="nav-item"><a class="nav-link {{ 'active' if status == s }}" href="{{ url_for('billing.bill_list', status=s, q=q) }}">{{ label }}</a></li>
+  {% endfor %}
+</ul>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>Bill</th><th>Visit date</th><th>Patient</th><th>Doctor</th><th class="text-end">Consultation</th><th class="text-end">Medicines</th><th class="text-end">Total</th><th class="text-end">Balance</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for b in bills %}
+        <tr>
+          <td class="fw-semibold">#{{ b.bill_id }}</td>
+          <td>{{ b.visit_date.strftime('%d %b %Y') }}</td>
+          <td>{{ b.patient_name }}<div class="small text-muted">{{ b.patient_phone }}</div></td>
+          <td>{{ b.doctor_name }}<div class="small text-muted">{{ b.department_name }}</div></td>
+          <td class="text-end">{{ b.consultation_fee|money }}</td>
+          <td class="text-end">{{ b.medicine_cost|money }}</td>
+          <td class="text-end fw-semibold">{{ b.total|money }}</td>
+          <td class="text-end {{ 'text-danger' if b.balance > 0 }}">{{ b.balance|money }}</td>
+          <td><span class="status status-{{ b.status }}">{{ b.status }}</span></td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-primary text-nowrap" href="{{ url_for('billing.detail', bill_id=b.bill_id) }}">{{ 'Collect' if b.status == 'Pending' else 'Invoice' }}</a></td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10" class="text-center text-muted py-4">No bills found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

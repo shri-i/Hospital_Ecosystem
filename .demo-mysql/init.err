@@ -1,0 +1,10 @@
+2026-10-22T19:08:52.619997Z 0 [System] [MY-015017] [Server] MySQL Server Initialization - start.
+2026-10-22T19:08:52.634571Z 0 [System] [MY-013169] [Server] /usr/local/mysql/bin/mysqld (mysqld 9.5.0) initializing of server in progress as process 1243
+2026-10-22T19:08:52.649738Z 0 [Warning] [MY-010159] [Server] Setting lower_case_table_names=2 because file system for /Users/shrirajmetkar/Desktop/DBMS_PROJECT/.demo-mysql/data/ is case insensitive
+2026-10-22T19:08:52.662600Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
+2026-10-22T19:08:52.760763Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
+2026-10-22T19:08:53.739133Z 0 [System] [MY-013172] [Server] Received SHUTDOWN from user <via user signal>. Shutting down mysqld (Version: 9.5.0).
+2026-10-22T19:08:53.739164Z 5 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
+2026-10-22T19:08:53.740502Z 5 [ERROR] [MY-000061] [Server] 1053  Server shutdown in progress.
+2026-10-22T19:08:53.740851Z 0 [ERROR] [MY-013455] [Server] The newly created data directory /Users/shrirajmetkar/Desktop/DBMS_PROJECT/.demo-mysql/data/ by --initialize is unusable. You can remove it.
+2026-10-22T19:08:53.740992Z 0 [ERROR] [MY-010119] [Server] Aborting

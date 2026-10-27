@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Departments{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Departments</h1><div class="sub">{{ departments|length }} departments</div></div>
+  <a class="btn btn-primary" href="{{ url_for('admin.department_form') }}"><i class="bi bi-plus-lg"></i> Add department</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>ID</th><th>Name</th><th>Description</th><th class="text-center">Doctors</th><th class="text-center">Staff</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for d in departments %}
+        <tr>
+          <td class="text-muted">{{ d.department_id }}</td>
+          <td class="fw-semibold">{{ d.name }}</td>
+          <td>{{ d.description or '—' }}</td>
+          <td class="text-center">{{ d.doctor_count }}</td>
+          <td class="text-center">{{ d.staff_count }}</td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin.department_form', dept_id=d.department_id) }}"><i class="bi bi-pencil"></i> Edit</a>
+            <form class="d-inline" method="post" action="{{ url_for('admin.department_delete', dept_id=d.department_id) }}" data-confirm="Delete department {{ d.name }}?">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No departments yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "hospital-app",
+      "runtimeExecutable": "/Users/shrirajmetkar/Desktop/DBMS_PROJECT/hospital-management/.venv/bin/python",
+      "runtimeArgs": ["/Users/shrirajmetkar/Desktop/DBMS_PROJECT/hospital-management/app.py"],
+      "env": { "PORT": "5001" },
+      "port": 5001
+    }
+  ]
+}

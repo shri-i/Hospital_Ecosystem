@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <!-- ===== left: brand + healthcare artwork ===== -->
+  <div class="login-hero">
+    <div class="brand"><i class="bi bi-heart-pulse-fill"></i> MediCare</div>
+
+    <!-- illustration: medical cross, stethoscope and heartbeat line -->
+    <svg class="hero-art" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="gAub" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#5A1F52"/>
+          <stop offset="1" stop-color="#3A0F34"/>
+        </linearGradient>
+        <linearGradient id="gGold" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#EAAA00" stop-opacity="0"/>
+          <stop offset=".25" stop-color="#EAAA00"/>
+          <stop offset=".75" stop-color="#F5C842"/>
+          <stop offset="1" stop-color="#EAAA00" stop-opacity="0"/>
+        </linearGradient>
+        <radialGradient id="gGlow">
+          <stop offset="0" stop-color="#EAAA00" stop-opacity=".55"/>
+          <stop offset="1" stop-color="#EAAA00" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="blurBig" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14"/></filter>
+        <filter id="blurMotion" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="10 2"/></filter>
+        <filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+      </defs>
+
+      <!-- soft marigold glow -->
+      <circle cx="330" cy="230" r="190" fill="url(#gGlow)"/>
+
+      <!-- medical cross: blurred "motion" copy + sharp cross -->
+      <g transform="rotate(-12 350 190)">
+        <g filter="url(#blurMotion)" opacity=".45" transform="translate(-46 0)">
+          <rect x="320" y="90" width="64" height="200" rx="14" fill="#3A0F34"/>
+          <rect x="252" y="158" width="200" height="64" rx="14" fill="#3A0F34"/>
+        </g>
+        <rect x="320" y="90" width="64" height="200" rx="14" fill="url(#gAub)"/>
+        <rect x="252" y="158" width="200" height="64" rx="14" fill="url(#gAub)"/>
+        <rect x="336" y="174" width="32" height="32" rx="6" fill="#EAAA00"/>
+      </g>
+
+      <!-- stethoscope -->
+      <g fill="none" stroke-linecap="round">
+        <path d="M150 70 C 138 160, 160 235, 212 258" stroke="#3A0F34" stroke-width="12" opacity=".35" filter="url(#blurBig)"/>
+        <path d="M150 70 C 138 160, 160 235, 212 258" stroke="#3A0F34" stroke-width="10"/>
+        <path d="M272 70 C 284 160, 262 235, 212 258" stroke="#3A0F34" stroke-width="10"/>
+        <path d="M212 258 C 205 350, 250 420, 318 402" stroke="#5A1F52" stroke-width="12"/>
+      </g>
+      <circle cx="150" cy="66" r="10" fill="#EAAA00"/>
+      <circle cx="272" cy="66" r="10" fill="#EAAA00"/>
+      <circle cx="350" cy="392" r="38" fill="url(#gAub)"/>
+      <circle cx="350" cy="392" r="22" fill="#EAAA00"/>
+      <circle cx="350" cy="392" r="9" fill="#3A0F34"/>
+
+      <!-- heartbeat (ECG) line with glow -->
+      <polyline points="0,318 130,318 152,318 168,286 184,350 206,226 230,388 250,318 320,318 340,300 356,318 520,318"
+                fill="none" stroke="#EAAA00" stroke-width="12" stroke-linejoin="round" opacity=".55" filter="url(#glow)"/>
+      <polyline points="0,318 130,318 152,318 168,286 184,350 206,226 230,388 250,318 320,318 340,300 356,318 520,318"
+                fill="none" stroke="url(#gGold)" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>
+
+    <div>
+      <h1 class="hero-title">Care is<br>a new<br><span class="accent">power.</span></h1>
+      <p class="mt-3 mb-0" style="max-width: 330px; position: relative; z-index: 2">
+        Patients, appointments, prescriptions and billing, stored in one MySQL database.
+      </p>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-end gap-3">
+      <div class="hero-feats">
+        <div><i class="bi bi-people"></i> Patient records</div>
+        <div><i class="bi bi-calendar-check"></i> No double booking</div>
+        <div><i class="bi bi-capsule"></i> Auto billing</div>
+        <div><i class="bi bi-shield-lock"></i> Role-based access</div>
+      </div>
+      <div class="hero-swatches" title="Ice Silver · Deep Aubergine · Marigold">
+        <span style="background:#DDE3E8"></span><span style="background:#3A0F34"></span><span style="background:#EAAA00"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== right: sign-in form ===== -->
+  <div class="login-form">
+    <div class="card p-4">
+      <h2 class="h4 fw-bold mb-1">Sign in</h2>
+      <p class="text-muted small mb-4">Use your hospital account.</p>
+      <form method="post" novalidate>
+        <div class="mb-3">
+          <label class="form-label" for="username">Username</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input class="form-control" id="username" name="username" required autofocus value="{{ request.form.get('username', '') }}">
+          </div>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input class="form-control" id="password" name="password" type="password" required>
+          </div>
+        </div>
+        <button class="btn btn-primary w-100 py-2" type="submit"><i class="bi bi-box-arrow-in-right"></i> Login</button>
+      </form>
+
+      <!-- Demo accounts from seed.sql (click to fill) -->
+      <div class="mt-4 pt-3 border-top">
+        <div class="small text-muted mb-2">Demo accounts (click to fill)</div>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="badge role-badge role-admin demo-login p-2" data-u="admin" data-p="admin123">admin</span>
+          <span class="badge role-badge role-doctor demo-login p-2" data-u="dr.mehta" data-p="doctor123">dr.mehta</span>
+          <span class="badge role-badge role-receptionist demo-login p-2" data-u="reception" data-p="recep123">reception</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  document.querySelectorAll('.demo-login').forEach(function (el) {
+    el.addEventListener('click', function () {
+      document.getElementById('username').value = el.dataset.u;
+      document.getElementById('password').value = el.dataset.p;
+    });
+  });
+</script>
+{% endblock %}

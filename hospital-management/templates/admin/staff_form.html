@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit' if editing else 'Add' }} staff{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>{{ 'Edit staff member' if editing else 'Add staff member' }}</h1></div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('admin.staff') }}"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+<form method="post" novalidate>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card p-4 h-100">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-person-vcard"></i> Staff details</h2>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Full name *</label>
+          <input class="form-control" name="name" required value="{{ member.get('name', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Role *</label>
+          <input class="form-control" name="role_title" required list="roleOptions" value="{{ member.get('role_title', '') }}" placeholder="Receptionist, Nurse…">
+          <datalist id="roleOptions"><option>Receptionist</option><option>Nurse</option><option>Lab Technician</option><option>Pharmacist</option><option>Ward Assistant</option></datalist>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Department *</label>
+          <select class="form-select" name="department_id" required>
+            <option value="">Choose…</option>
+            {% for dep in departments %}
+              <option value="{{ dep.department_id }}" {{ 'selected' if member.get('department_id')|string == dep.department_id|string }}>{{ dep.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Monthly salary (₹)</label>
+          <input class="form-control" name="salary" type="number" min="0" step="0.01" value="{{ member.get('salary', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Phone *</label>
+          <input class="form-control" name="phone" required maxlength="10" placeholder="10 digits" value="{{ member.get('phone', '') }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          <input class="form-control" name="email" type="email" value="{{ member.get('email') or '' }}">
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card p-4 h-100">
+      <h2 class="h6 text-brand mb-3"><i class="bi bi-key"></i> Receptionist login</h2>
+      {% if member.has_login %}
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input class="form-control" value="{{ member.username }}" disabled>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">New password (leave blank to keep)</label>
+          <input class="form-control" name="password" type="password" minlength="6">
+        </div>
+      {% else %}
+        <p class="small text-muted">Optional. Fill these in to let this person log in as a <b>receptionist</b>.</p>
+        <div class="mb-3">
+          <label class="form-label">Username</label>
+          <input class="form-control" name="username" value="{{ member.get('username') or '' }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input class="form-control" name="password" type="password" minlength="6">
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<button class="btn btn-primary mt-3"><i class="bi bi-check-lg"></i> Save</button>
+</form>
+{% endblock %}
